@@ -12,3 +12,4 @@ stopwords>>nltk.corpus
 scikit-learn
 TfidfVectorizer>>sklearn.feature_extraction.text
 numpy
+transformers
