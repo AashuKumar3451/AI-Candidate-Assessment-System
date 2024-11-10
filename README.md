@@ -113,21 +113,16 @@ CodeAndResults/
 ├── job_descriptions_file                  #Job descriptions files with ranking of resumes
 ├── libraries.txt                          # List of dependencies
 Datasets
-├── Job_descriptions.xlsx                # Input file for job descriptions
+├── Job_descriptions.xlsx                  # Input file for job descriptions
 Resumes
 ├── All Resumes (in pdf) 
 Inspirations
 ├── Reasearch papers 
-BasePaper.pdf                           #Base paper that we are following
-├──
+BasePaper.pdf                              #Base paper that we are following
 FYP_Proposal_AI – Powered Candidate Assessment System.docx  #Project Proposal
-├──
 FYP-1 Defense Presentation      #Project presentation
-├──
 FYP.ipynb           #collab file for the project
-├──
 planning.txt        #Project planning
-├──
 Work On The Website.drawio.pdf      #System Architecture
 
 ```
