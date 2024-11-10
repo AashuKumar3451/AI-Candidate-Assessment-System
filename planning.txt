@@ -1,0 +1,144 @@
+What?
+--> An automated system which will take CV from user scan it and according to the applicant's skills a test will be generated through AI. After the test will perfomed by the user a report will be generated which HR can see and decide weatehr the applicant is suitable for the job.
+
+Goal: Automating HR process of hiring.
+
+--------------------------------------------------------------------------------------------------------------------
+
+
+Functionalities:
+1. User sign up/Sign in (User here is the applicant.)
+2. User will upload his/her CV/Resume.
+3. CV Scaning process will start.
+4. User will wait untill CV is scanned.
+5. A automated mail will be mailed to user with the test date and venue (With the decision of HR if the person is eligible for the job or not).
+5. A test will be generated thorugh AI according to the skillset of user and the job he/she is applying for.
+6. After the test a report will be generated.
+7. User can see his/her report.
+8. The report will be mailed to HR.
+9. If HR accept the user as a new employee he/she will be called for interview.
+10. HR can reject the application if the given details of the applicant is wrong.
+11. User can see his/her profile.
+12. User can update his/her profile information.
+13. User can see the posting details if he is listed from HR.
+
+---------------------------------------------------------------------------------------------------------------------
+
+Limitations: 
+1. This project only work on one job posting of junior developer.
+2. Language for now is Cpp but we can add more if the project gets ready before time.
+
+---------------------------------------------------------------------------------------------------------------------
+
+
+Fields to study?
+1. Frontend: HTML, CSS, JS and React(for building interactive and dynamic UI).
+2. Backend: Node.js with Express
+3. Database: MongoDB
+4. AI models and tests.
+5. Email Automation: Tools like NodeMailer, SendGrid, or Mailgun can automate sending test details and reports to users and HR.
+6. CV Parsing Technologies: 
+    - NLP with Python Libraries-> Tools like spaCy or NLTK can help with CV parsing and extracting skills and job-relevant information. 
+    - Regex-> To extract specific fields (like name, skills, contact details) from uploaded CVs.
+7. Authentication: JSON Web Tokens.
+8. Data Encryption: Secure CV and Report.
+9. ML: To generate tests based in applicants skills. Basic ML frameworks like TensorFlow or PyTorch can be helpful.
+10. DevOps & Cloud Deployment.
+
+---------------------------------------------------------------------------------------------------------------------
+
+AI Model:
+Field for Skill Extraction: Information Retrieval using NLP
+-> We will fine-tune a model called BERT to extract technical skills from CVs.
+
+Field for Automated Test: Automated Test Generation and Evaluation
+-> We will fine-tune a model called GPT-3 to generate tests and evaluate those tests.
+
+Why using fine-tunning existing model:
+1. Project Scope and Timeline: We have use case enerating AI-based tests for a Junior Developer role with a focus on C++. This task can be efficiently managed by fine-tuning a pre-trained language model. This will save time.
+2. Limited Resource Requirement: Fine-tuning can be done using smaller datasets, and with frameworks like Hugging Face’s Transformers, you can fine-tune pre-trained models like GPT-3 or BERT with relative ease.
+3. Available Pre-trained Models:  GPT-3, T5, and Codex (for programming tasks).
+4. Task-Specific Nature: You’re generating tests based on a known set of skills (C++ for now), and fine-tuning an existing model will help you focus on adapting the model to recognize job-related skills and generate questions accordingly.
+5. Scalability: Once you fine-tune the model for the Junior Developer (C++) role, you can later extend it to other roles and languages (such as Java, Python) by fine-tuning again with more domain-specific data.
+
+Workflow:
+BERT for CV Scanning & Skill Extraction.
+Codex(GPT-3) for Test Generation based on extracted skills and evaluating tests.
+
+--->APIs used of pre-trained models
+
+---------------------------------------------------------------------------------------------------------------------
+
+Routes: 
+
+//multiple page for test 
+test: [{}, {}, {}, {}]
+for loop for showing every question in the frontend
+
+//HR pages routes
+
+1. New HR
+2. New Link /user/upload/:uniqueID
+
+new HR with id: 3345
+new link: /user/upload/3345
+linkedin post link: /user/upload/3345
+
+HR{
+    position: junior web dev, senior   //form, unique
+    link: new link,
+    cv: [{
+        position: jr.
+        data: {
+        }
+    }, {
+        position: sr.
+            data: {}
+    }, {}, {}]
+}
+
+1. Applicant Authentication:        //no accounts needed.
+    /auth/signup: POST - Create a new applicant
+    /auth/signin: POST - Signin the existing applicant
+
+2. Applicant Profile:
+    /applicant/profile: GET - Get applicant's profile details
+    /applicant/profile/update: PUT - Update details of applicant
+
+3. CV Uploading And Scanning:
+    /cv/upload: POST - Upload a CV for Scanning     //take email as input    //random key generate 1234 //1234 and cv will be store db 
+    /cv/scan-status: GET - Get result of CV Scanning
+
+4. Test Management: 
+    /test/generate: GET - Get the generated test from AI       //cv is selected your username is 1234
+    /test/submit: POST - Submit the completed test          //1234 has submitted the test and score will be saved in db         //next email with score
+    /test/result: GET - Get the result after the test
+
+5. Report Management:
+    /report/view: GET - Get the report of the applicant
+    /report/send: POST - Send the report to HR
+
+6. HR Management:
+    /hr/decision: GET - Get HR's decision about applicant's application
+    /hr/interview-call: POST - Send an interview call to the applicant
+
+7. Job Details:
+    /job/details: GET - Get the posting details if the applicant is listed by the HR
+
+---------------------------------------------------------------------------------------------------------------------
+DB Models:
+1. User Model
+2. CV(Scanned Data) Model
+3. Test Model
+4. Report Model
+5. HR Decision Model
+
+
+Pages:
+1. HR will make a account
+2. List of job roles
+3. CV's for each job roles      //display with score //hr will decide and procced for test  //automated will be sent to candidates.
+4. CV page for each CV
+5. Page for test score     //hr will select them for interview and send an automated email
+6. Report for each test         //1234 will store that report in the db     //email is sent for report.
+
