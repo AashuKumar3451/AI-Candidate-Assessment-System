@@ -17,7 +17,7 @@ resume_df = resume_df[["Filename", "Top_Keywords"]]
 resume_df['Top_Keywords'] = resume_df['Top_Keywords'].fillna("")
 
 # Initialize SBERT model
-sbert_model = SentenceTransformer("all-MiniLM-L6-v2")
+sbert_model = SentenceTransformer("paraphrase-MPNet-base-v2")
 
 # Function to generate SBERT embeddings
 def get_sbert_embedding(text):
