@@ -2,7 +2,7 @@ import pandas as pd
 from sentence_transformers import SentenceTransformer, util
 
 # Load job descriptions and resumes
-job_descriptions_file = "../Job_descriptions.xlsx"
+job_descriptions_file = "../Datasets/Job_descriptions.xlsx"
 tfidf_resumes_file = "all_resumes_with_tfidf_keywords.xlsx"
 
 # Read the job descriptions
