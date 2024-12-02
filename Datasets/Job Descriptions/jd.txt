@@ -1,0 +1,49 @@
+Job Title: Junior Full Stack Developer- Part Time
+Company: Zehenify
+Location: Remote
+About Zehenify:
+Zehenify is a cutting-edge SaaS platform dedicated to revolutionizing mental health services in
+Pakistan. Our mission is to empower mental health professionals and individuals by providing
+innovative tools for therapy management, client progress tracking, and personalized
+assessments. At Zehenify, we foster a collaborative environment that values creativity, open
+communication, and integrity. Join our passionate team as we work to break the stigma
+surrounding mental health and make a lasting impact in the community.
+Role Description:
+We are seeking a motivated and detail-oriented Junior Full Stack Developer to join the Zehenify
+team. In this role, you will help build and maintain our next-generation mental health platform,
+ensuring a seamless user experience across the frontend and backend. This is an excellent
+opportunity to grow your skills in a dynamic, purpose-driven environment
+Responsibilities:
+● Develop features & maintain functionality, ensuring a seamless user experience across
+both the frontend and backend.
+● Build responsive and intuitive user interfaces using Next.js and React.js.
+● Implement server-side rendering (SSR) and static site generation (SSG) to optimize
+performance.
+● Design and integrate backend systems using Node.js and Express.js.
+● Develop and consume RESTful APIs to support various platform features.
+● Manage and optimize databases with MongoDB, including schema design and
+aggregation pipelines.
+● Collaborate with the team to deliver high-quality, maintainable code.
+● Troubleshoot and debug application issues to ensure reliability and scalability.
+● Follow Git version control workflows to manage codebases effectively
+Requirements:
+Frontend Development:
+- Expertise in Next.js and React.js fundamentals.
+- Strong knowledge of HTML, CSS, & JavaScript (ES6+)
+- Familiarity with server-side rendering (SSR) and static site generation (SSG)
+- Experience with state management tools (e.g., Redux, Context API, or alternatives)
+- Proficiency in responsive design and modern CSS frameworks (e.g., TailwindCSS,
+Bootstrap, or Material-UI).
+Backend Development:
+- Strong experience with Node.js and Express.js for API development.
+- Proficiency in designing and consuming RESTful APIs (GraphQL knowledge is a plus)
+- Familiarity with authentication mechanisms like JWT, OAuth, or Passport.js.
+- Experience with WebSockets for real-time communication (optional but valuable)
+Database Management:
+- Deep understanding of MongoDB, including schema design, indexing,& aggregation pipelines.
+- Knowledge of MongoDB Atlas for cloud-based database management.
+- Experience with database optimization and scaling.
+Qualifications:
+3rd and 4th-year undergraduate students or fresh graduates in Computer Science, Software
+Engineering, or related fields are eligible to apply.
+To Apply: Send your resume and portfolio to info@zehenify.co

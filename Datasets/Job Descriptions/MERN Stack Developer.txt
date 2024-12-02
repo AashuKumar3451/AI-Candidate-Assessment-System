@@ -1,0 +1,19 @@
+MERN Stack Developer
+Location: Remote/Flexible
+
+About Us
+[Your Company Name] seeks a passionate and detail-oriented MERN Stack Developer with a proven track record of building robust web applications. As a valued team member, you will contribute to designing and deploying modern, scalable solutions using the latest web technologies.
+
+Key Responsibilities
+
+Develop and deploy full-stack web applications using the MERN stack (MongoDB, Express.js, React.js, Node.js).
+Create responsive user interfaces with Bootstrap, Tailwind CSS, and JavaScript, focusing on dynamic, user-friendly experiences.
+Design efficient back-end systems with Node.js and RESTful APIs, ensuring secure data handling and CRUD functionalities.
+Optimize database schemas in MongoDB to enhance performance and scalability.
+Use GitHub for version control and collaboration on codebases.
+Qualifications
+
+Bachelor’s degree in Computer Science or a related field.
+Proven experience with HTML, CSS, JavaScript, and frameworks like React.js.
+Practical expertise in building projects such as portfolio websites, blog platforms, and movie ticketing systems.
+Hands-on experience with development tools like VS Code and familiarity with modern web development workflows.

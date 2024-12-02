@@ -1,0 +1,16 @@
+Job ID,Job Title,Description,Required Skills,Experience,Location
+JD001,Junior Software Developer,Responsible for backend development, including REST API integration and database management using SQL.,Python, SQL, REST API,Entry Level,New York, NY
+JD002,Junior Software Developer,Assist in developing front-end applications with HTML, CSS, and JavaScript. Collaborate with the UX/UI design team.,HTML, CSS, JavaScript,Internship,San Francisco, CA
+JD003,Junior Software Developer,Develop, test, and maintain software applications. Proficiency in Python and familiarity with Django framework is required.,Python, Django,Entry Level,Austin, TX
+JD004,Junior Software Developer,Participate in code reviews and debugging sessions to optimize software performance. Knowledge of Java is essential.,Java, Git,Entry Level,Seattle, WA
+JD005,Junior Software Developer,Responsible for developing mobile applications using React Native. Basic understanding of Android and iOS ecosystems is a plus.,React Native, Android, iOS,Internship,Chicago, IL
+JD006,Junior Software Developer,Assist in the development and maintenance of cloud-based applications on AWS. Knowledge of cloud architecture is beneficial.,AWS, Cloud Architecture,Entry Level,Denver, CO
+JD007,Junior Software Developer,Write efficient code for new and existing applications in JavaScript and collaborate on Git version control.,JavaScript, Git,Internship,Boston, MA
+JD008,Junior Software Developer,Work with data science team to integrate data processing pipelines using Python and SQL.,Python, SQL, Data Processing,Entry Level,Atlanta, GA
+JD009,Junior Software Developer,Contribute to web applications by working on backend services, REST APIs, and server-side logic in Node.js.,Node.js, REST API,Entry Level,Dallas, TX
+JD010,Junior Software Developer,Develop responsive front-end applications with a focus on user experience. Must be proficient in React.,React, UX Design,Entry Level,Los Angeles, CA
+JD011,Junior Software Developer,Assist in testing and debugging software modules across the development lifecycle. Familiarity with testing frameworks is a plus.,Testing, Debugging,Entry Level,Miami, FL
+JD012,Junior Software Developer,Design and implement application features. Collaborate with the database team to optimize queries.,SQL, Database Management,Internship,Orlando, FL
+JD013,Junior Software Developer,Support development teams in troubleshooting and performance tuning of applications. Experience with C++ is preferred.,C++, Performance Tuning,Entry Level,Portland, OR
+JD014,Junior Software Developer,Participate in agile sprints, providing regular updates and testing features to meet customer requirements.,Agile, Scrum, Testing,Entry Level,San Diego, CA
+JD015,Junior Software Developer,Develop and integrate third-party APIs for enhanced application functionality. Knowledge of security protocols is desirable.,API Integration, Security,Entry Level,Philadelphia, PA
