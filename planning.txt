@@ -23,6 +23,21 @@ Functionalities:
 13. User can see the posting details if he is listed from HR.
 
 ---------------------------------------------------------------------------------------------------------------------
+Project Flow:
+1. Candidates and HRs can signup/signin
+2. There will be a page of job descriptions as a home page
+   2a. Candidate can open any job description and post his/her details with resume attached.
+   2b. HR can open any job description and to see candidates who applied for that job description with their resume score.
+       2b(I). Similarity will be calculated through BERT model.
+       2b(II). HR can select or reject any candidate for the test. In both cases, candidate will get a automated email.
+   2c. HR can add other job descriptions through a button.
+3. There will be a test page where the candidates will give a technical interview.
+   3a. Test submission will make sure to save the report of the test in the database.
+       3a(I). Test questions and evaluation will be done by GPT-model
+4. There will be a page for reports so HR can see the reports with scores so HR can select or reject him/her for the job.
+   4a. Scores are given by the GPT-model also.
+5. Hr can see the selected candidates for job.
+---------------------------------------------------------------------------------------------------------------------
 
 Limitations: 
 1. This project only work on one job posting of junior developer.
