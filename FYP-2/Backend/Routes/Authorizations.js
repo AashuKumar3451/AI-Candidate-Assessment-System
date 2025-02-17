@@ -28,7 +28,6 @@ router.post("/signup", async (req, res) => {
     res.status(200).json({ user: response, token: token });
   } catch (error) {
     console.log("Error Occured", error);
-    res.status(401).json({ err: error });
   }
 });
 
@@ -46,7 +45,6 @@ router.post("/signin", async (req, res) => {
     res.status(200).json({ user: user, token: token });
   } catch (error) {
     console.log("Error Occured", error);
-    res.status(401).json({ err: error });
   }
 });
 
