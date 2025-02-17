@@ -1,0 +1,6 @@
+export {default as Header} from "./Header.jsx"
+export {default as Footer} from "./Footer.jsx"
+export {default as Authentication} from "./Authentication.jsx"
+export {default as Signup} from "./Signup.jsx"
+export {default as Signin} from "./Signin.jsx"
+export {default as Home} from "./Home.jsx"
