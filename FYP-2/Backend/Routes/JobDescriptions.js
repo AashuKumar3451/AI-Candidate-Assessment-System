@@ -67,205 +67,7 @@ const checkCandidate = async (userID) => {
   }
 };
 
-
-/*
-router.post("/apply/:JID", upload.single("resume"), async (req, res) => {
-  try {
-    //const userID = req.userPayload.id;
-    // TEMP ONLY 
-
-const userID = req.userPayload?.id || "test-candidate-id";
-
-    const jobID = req.params.JID;
-    if (!(await checkCandidate(userID))) {
-      return res.status(403).json("No Access Granted.");
-    }
-
-    // Check if the candidate already applied for the same job
-    const existingCandidate = await CandidatesModel.findOne({
-      userID,
-      jobDescriptionAppliedFor: jobID,
-    });
-    if (existingCandidate) {
-      return res.status(400).json("You have already applied for this job.");
-    }
-
-    // Create a new candidate entry
-    const newCandidate = new CandidatesModel({
-      userID,
-      coverLetter: req.body.coverLetter,
-      jobDescriptionAppliedFor: jobID,
-      resume: {
-        data: req.file.buffer,
-        contentType: req.file.mimetype,
-      },
-    });
-    const response = await newCandidate.save();
-    if (!response) {
-      return res.status(201).json("Error saving the application.");
-    }
-    const JD = await JobDescriptionsModel.findById(jobID);
-    if (!JD) {
-      return res.status(201).json("Job is not available anymore.");
-    }
-    JD.candidatesApplied.push(newCandidate.id);
-    const response2 = await JD.save();
-    if (!response2) {
-      return res.status(201).json("Error saving the application.");
-    }
-    const buffer = req.file.buffer;
-    const jobDescription = JD.details;
-    const flaskResponse = await axios.post(
-      "http://localhost:5000/resume-scan",
-      {
-        pdf: buffer.toString("base64"), // Convert PDF buffer to base64 for safe transmission
-        jobDescription: jobDescription, // Send job description as text
-      },
-      {
-        headers: {
-          "Content-Type": "application/json", // Ensures Flask receives the data as a PDF
-        },
-      }
-    );
-    // Extracted text from the Flask response
-    const extractedText = flaskResponse.data.extractedText;
-    const extractedJDText = flaskResponse.data.jobDescription;
-    const resumeScore = flaskResponse.data.similarityScore;
-
-    // Update candidate with the extracted text
-    newCandidate.resumeText = extractedText;
-    newCandidate.resumeScore = resumeScore;
-    await newCandidate.save();
-
-    //when someone apply for job his/her id should come in that jd table
-    const jd = await JobDescriptionsModel.findOne({ _id: jobID });
-    jd.candidatesApplied.push(newCandidate.id);
-    await jd.save();
-    
-
-    // Send the successful response with extracted text
-    res.status(200).json({
-      message: "Text extraction successful",
-      candidate: newCandidate.id,
-      resumeText: newCandidate.resumeText,
-      jdText: extractedJDText,
-      resumeScore: newCandidate.resumeScore,
-    });
-  } catch (error) {
-    res.status(401).json({ err: error });
-  }
-});
-*/
-
-
-/*
-router.post("/apply/:JID", upload.single("resume"), async (req, res) => {
-  try {
-    // 🐛 Debug: Log request details
-    console.log("📝 CV Upload Request Received");
-    console.log("Route Param - Job ID (JID):", req.params.JID);
-    console.log("User ID (from token or temp):", req.userPayload?.id || "test-candidate-id");
-    console.log("Form Data:", req.body);
-    console.log("Uploaded File Info:", req.file);
-
-    // TEMP ONLY
-    const userID = req.userPayload?.id || "test-candidate-id";
-    const jobID = req.params.JID;
-
-    if (!(await checkCandidate(userID))) {
-      console.warn("⚠️ Access denied: Not a candidate");
-      return res.status(403).json("No Access Granted.");
-    }
-
-    // Check if the candidate already applied for the same job
-    const existingCandidate = await CandidatesModel.findOne({
-      userID,
-      jobDescriptionAppliedFor: jobID,
-    });
-
-    if (existingCandidate) {
-      console.warn("⚠️ Duplicate application detected");
-      return res.status(400).json("You have already applied for this job.");
-    }
-
-    // Create a new candidate entry
-    const newCandidate = new CandidatesModel({
-      userID,
-      coverLetter: req.body.coverLetter || "", // fallback to avoid undefined
-      jobDescriptionAppliedFor: jobID,
-      resume: {
-        data: req.file.buffer,
-        contentType: req.file.mimetype,
-      },
-    });
-
-    const response = await newCandidate.save();
-    if (!response) {
-      console.error("❌ Failed to save new candidate");
-      return res.status(500).json("Error saving the application.");
-    }
-
-    const JD = await JobDescriptionsModel.findById(jobID);
-    if (!JD) {
-      console.warn("⚠️ Job not found");
-      return res.status(404).json("Job is not available anymore.");
-    }
-
-    JD.candidatesApplied.push(newCandidate.id);
-    const response2 = await JD.save();
-    if (!response2) {
-      console.error("❌ Failed to update job with new candidate");
-      return res.status(500).json("Error saving the application.");
-    }
-
-    // Process resume with Flask service
-    const buffer = req.file.buffer;
-    const jobDescription = JD.details;
-
-    const flaskResponse = await axios.post(
-      "http://localhost:5000/resume-scan",
-      {
-        pdf: buffer.toString("base64"),
-        jobDescription: jobDescription,
-      },
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    );
-
-    const extractedText = flaskResponse.data.extractedText;
-    const extractedJDText = flaskResponse.data.jobDescription;
-    const resumeScore = flaskResponse.data.similarityScore;
-
-    // Update candidate with analysis results
-    newCandidate.resumeText = extractedText;
-    newCandidate.resumeScore = resumeScore;
-    await newCandidate.save();
-
-    // Update JD again to ensure candidate is linked
-    const jd = await JobDescriptionsModel.findOne({ _id: jobID });
-    jd.candidatesApplied.push(newCandidate.id);
-    await jd.save();
-
-    // ✅ Success
-    console.log("✅ CV upload and processing complete for user:", userID);
-    res.status(200).json({
-      message: "Text extraction successful",
-      candidate: newCandidate.id,
-      resumeText: newCandidate.resumeText,
-      jdText: extractedJDText,
-      resumeScore: newCandidate.resumeScore,
-    });
-
-  } catch (error) {
-    console.error("❌ Error in /apply/:JID route:", error);
-    res.status(500).json({ err: error.message || "Internal server error" });
-  }
-});
-*/
-
+// ✅ Apply for a job (POST /apply/:JID)
 router.post("/apply/:JID", upload.single("resume"), async (req, res) => {
   try {
     // 🐛 Debug: Log request details
@@ -381,13 +183,7 @@ router.post("/apply/:JID", upload.single("resume"), async (req, res) => {
   }
 });
 
-
-
-
-
-
-
-
+// ✅ Add a job description (POST /add-jd/form)
 router.post("/add-jd/form", async (req, res) => {
   try {
     const userID = req.userPayload.id;
@@ -421,58 +217,7 @@ router.post("/add-jd/form", async (req, res) => {
   }
 });
 
-/*
-
-router.get("/applications/:JID", async (req, res) => {
-  try {
-    const hrID = req.userPayload.id;
-    if (!(await checkHR(hrID))) {
-      return res.status(403).json("No Access Granted.");
-    }
-    const jobID = req.params.JID;
-    const JD = await JobDescriptionsModel.findById(jobID);
-    const candidatesID = JD.candidatesApplied;
-    //if (!candidatesID) {
-      //return res.status(201).json("No Active Applications.");
-    //}
-
-    if (!candidatesID || candidatesID.length === 0) {
-      return res.status(200).json({ candidates: [] });
-    }
-    
-
-
-
-    let candidates = await Promise.all(
-      candidatesID.map(async (id) => {
-        const candidate = await CandidatesModel.findById(id);
-        if (!candidate) return null; // Handle case where candidate does not exist
-
-        return {
-          _id: candidate._id,
-          coverLetter: candidate.coverLetter,
-          jobDescriptionAppliedFor: candidate.jobDescriptionAppliedFor,
-          resume: candidate.resume
-            ? `data:${
-                candidate.resume.contentType
-              };base64,${candidate.resume.data.toString("base64")}`
-            : null,
-
-          isSelectedForInterview: candidate.isSelectedForInterview,
-          isSelectedForTest: candidate.isSelectedForTest,
-        };
-      })
-    );
-    candidates = candidates.filter((c) => c !== null);
-    res.status(200).json({ candidates: candidates });
-  } catch (error) {
-    res.status(401).json({ err: error });
-  }
-});
-
-*/
-
-
+// ✅ Fetch all applications for a job description (GET /applications/:JID)
 router.get("/applications/:JID", async (req, res) => {
   try {
     const hrID = req.userPayload.id;
@@ -524,12 +269,7 @@ router.get("/applications/:JID", async (req, res) => {
   }
 });
 
-
-
-
-
-
-
+// ✅ Fetch all candidates (GET /candidates)
 router.post("/select-resume/:JID/:CID", async (req, res) => {
   try {
     const hrID = req.userPayload.id;
@@ -622,6 +362,8 @@ router.post("/select-resume/:JID/:CID", async (req, res) => {
   }
 });
 
+
+// ✅ Reject a candidate (POST /reject-resume/:JID/:CID)
 router.post("/reject-resume/:JID/:CID", async (req, res) => {
   try {
     const hrID = req.userPayload.id;
@@ -670,6 +412,7 @@ router.post("/reject-resume/:JID/:CID", async (req, res) => {
   }
 });
 
+// ✅ Fetch selected candidates for interview (GET /selected-candidates/:JID)
 router.get("/selected-candidates/:JID", async (req, res) => {
   try {
     const hrID = req.userPayload.id;
