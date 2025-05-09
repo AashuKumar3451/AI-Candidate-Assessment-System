@@ -7,9 +7,8 @@ const router = Router();
 configDotenv({ path: "../../.env" });
 
 
-
 import UserDetailsModel from "../models/UsersDetails.js";
-import JobDescriptionsModel from "../models/JobDescriptions.js";
+import TestReportModel from "../models/TestReport.js";
 import CandidatesModel from "../models/Candidates.js";
 import EmailsModel from "../models/Emails.js";
 import HRModel from "../models/HR.js";
@@ -60,7 +59,7 @@ const checkHR = async (userID) => {
 const checkCandidate = async (userID) => {
   try {
     const user = await UserDetailsModel.findById(userID);
-    return user.role === "candidate";
+    return user?.role === "candidate";
   } catch (error) {
     return false;
   }
@@ -175,23 +174,32 @@ router.post("/reject/:JID/:CID", async (req, res) => {
   }
 });
 
-// router.get("/show-report/:JID", async (req, res) => {
-//   try {
-//     const hrID = req.userPayload.id;
-//     const JID = req.params.JID;
-//     if (!(await checkHR(hrID))) {
-//       return res.status(403).json("No Access Granted.");
-//     }
-//     const job = await JobDescriptionsModel.findById(JID);
-//     if(!job){
-//       return res.status(201).json("Job is not active anymore.");
-//     }
-//     res.status(200).json({ candidate: response });
+router.get("/:CID/:JID", async (req, res) => {
+  try {
+    const { CID, JID } = req.params;
+    const userID = req.userPayload.id;
+    if (!(await checkHR(userID))) {
+      return res.status(403).json("No Access Granted.");
+    }
+    const report = await TestReportModel.findOne({
+      candidateID: CID,
+      jobDescriptionID: JID
+    });
 
-//   } catch (error) {
-//     res.status(401).json({ err: error });
+    if (!report) {
+      return res.status(404).json({ error: "Report not found" });
+    }
 
-//   }
-// });
+    res.status(200).json({
+      reportText: report.reportText,
+      reportPdfBase64: report.reportPdf.toString("base64")
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
+
 
 export default router;

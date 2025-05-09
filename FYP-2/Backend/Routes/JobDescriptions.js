@@ -70,13 +70,6 @@ const checkCandidate = async (userID) => {
 // ✅ Apply for a job (POST /apply/:JID)
 router.post("/apply/:JID", upload.single("resume"), async (req, res) => {
   try {
-    // 🐛 Debug: Log request details
-    console.log("📝 CV Upload Request Received");
-    console.log("Route Param - Job ID (JID):", req.params.JID);
-    console.log("User ID (from token or temp):", req.userPayload?.id || "test-candidate-id");
-    console.log("Form Data:", req.body);
-    console.log("Uploaded File Info:", req.file);
-
     // TEMP ONLY
     const userID = req.userPayload?.id || "test-candidate-id";
     const jobID = req.params.JID;
@@ -269,99 +262,69 @@ router.get("/applications/:JID", async (req, res) => {
   }
 });
 
-// ✅ Fetch all candidates (GET /candidates)
+// ✅ Select a candidate for test (POST /select-resume/:JID/:CID)
 router.post("/select-resume/:JID/:CID", async (req, res) => {
   try {
     const hrID = req.userPayload.id;
     const CID = req.params.CID;
-    if (!(await checkHR(hrID))) {
-      return res.status(403).json("No Access Granted.");
-    }
-    // Find the candidate who applied for this job
+    if (!(await checkHR(hrID))) return res.status(403).json("No Access Granted.");
+
     const candidate = await CandidatesModel.findOne({
       _id: CID,
       jobDescriptionAppliedFor: req.params.JID,
     });
-    if(!candidate) {
-      return res.status(400).json("Candidate not found.");
-    }
-    if (candidate && candidate.isSelectedForTest) {
-      return res.status(400).json("This candidate is already selected for this test.");
-    }
+    if (!candidate) return res.status(400).json("Candidate not found.");
+    if (candidate.isSelectedForTest) return res.status(400).json("Already selected.");
+
     candidate.isSelectedForTest = true;
-    const response = await candidate.save();
-    if (!response) {
-      return res.status(201).json("Error occured.");
-    }
-    
+    await candidate.save();
+
     const user = await UserDetailsModel.findById(candidate.userID);
-    if (!user) {
-      return res.status(201).json("No user available.");
-    }
-    // Prepare email content
-    const emailMessage = `Dear ${user.name},\n\nCongratulations! You have been selected for the test.\nYour test details will be sent soon.\n\nBest regards,\nHR Team`;
+    if (!user) return res.status(400).json("User not found.");
 
-    // Send email and store in database
-    const emailResponse = await sendAndStoreEmail({
-      candidateID: candidate.id,
-      to: user.email, // Assuming 'email' field exists in CandidatesModel
-      message: emailMessage,
-      type: "test-schedule",
+    const jd = await JobDescriptionsModel.findById(req.params.JID);
+    if (!jd) return res.status(400).json("Job Description not found.");
+
+    const pythonAPI = "http://127.0.0.1:5000/test-generate";
+    const testResponse = await axios.post(pythonAPI, {
+      resume: candidate.resumeText || "",
+      jobDescription: jd.details || "",
+    }, { headers: { "Content-Type": "application/json" } });
+
+    if (!testResponse.data.success) return res.status(500).json({ error: "Test generation failed." });
+
+    const newTest = new TestModel({
+      candidateID: candidate._id,
+      jobDescriptionID: req.params.JID,
+      questions: testResponse.data.questions,
+      testAccessDeadline: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
     });
+    await newTest.save();
 
-    if (!emailResponse.success) {
-      return res.status(500).json({ error: "Email sending failed." });
-    }
-
-    //when someone is selected for test his/her id should come in hr table
     const hr = await HRModel.findOne({ userID: hrID });
     hr.selectedCandidatesForTest.push(candidate.id);
     await hr.save();
 
+    const testLink = `https://your-frontend-domain.com/test/${candidate.id}/${req.params.JID}`;
+    const emailMessage = `Dear ${user.name},\n\nCongratulations! You have been selected for the test.\nPlease take your test within 3 days using the following link:\n${testLink}\n\nBest regards,\nHR Team`;
 
-    const jd = await JobDescriptionsModel.findById(req.params.JID);
-    if (!jd) {
-      return res.status(201).json("No candidate available.");
-    }
-
-    // Call Python API for test generation
-    const pythonAPI = "http://127.0.0.1:5000/test-generate"; // Change to your actual Python server URL
-    const testResponse = await axios.post(
-      pythonAPI,
-      {
-        resume: candidate.resumeText ? String(candidate.resumeText) : "",
-        jobDescription: jd.details ? String(jd.details) : "",
-      },
-      {
-        headers: {
-          "Content-Type": "application/json", // Ensures Flask receives the data as a PDF
-        },
-      }
-    );
-    if (!testResponse.data.success) {
-      return res.status(500).json({ error: "Test generation failed." });
-    }
-
-    // Save test to database
-    const newTest = new TestModel({
-      candidateID: candidate._id,
-      jobDescriptionID: req.params.JID,
-      questions: testResponse.data.questions, // Store generated test from Python
+    const emailResponse = await sendAndStoreEmail({
+      candidateID: candidate.id,
+      to: user.email,
+      message: emailMessage,
+      type: "test-schedule",
     });
+    if (!emailResponse.success) return res.status(500).json({ error: "Email sending failed." });
 
-    await newTest.save();
-
-    // Return success response
     res.status(200).json({
-      message: "Candidate selected and email sent successfully.",
+      message: "Candidate selected and test created.",
       candidate: candidate.id,
       test: newTest,
     });
   } catch (error) {
-    res.status(401).json({ err: error });
+    res.status(500).json({ err: error.message });
   }
 });
-
 
 // ✅ Reject a candidate (POST /reject-resume/:JID/:CID)
 router.post("/reject-resume/:JID/:CID", async (req, res) => {

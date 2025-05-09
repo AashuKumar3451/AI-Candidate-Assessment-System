@@ -4,20 +4,42 @@ const TestSchema = mongoose.Schema({
   candidateID: {
     type: mongoose.Schema.Types.ObjectId,
     required: true,
-    ref: "Candidates"
+    ref: "Candidates",
   },
-  jobDescriptionID:{
+  jobDescriptionID: {
     type: mongoose.Schema.Types.ObjectId,
     required: true,
-    ref: "JobDescriptions"
+    ref: "JobDescriptions",
   },
-  questions: [{
-        type: String,
-        required: true
-  }],
-  answers: [{
-    type: String,
-  }]
+  questions: {
+    mcqs: [
+      {
+        question: String,
+        options: [String],
+        answer: String,
+      },
+    ],
+    pseudocode: [String],
+    theory: [String],
+  },
+  answers: {
+    mcqs:{
+      type: [String],
+      default: []
+    },
+    pseudocode:{
+      type: [String],
+      default: []
+    },
+    theory:{
+      type: [String],
+      default: []
+    },
+  },
+  testAccessDeadline: {
+    type: Date,
+    required: true,
+  },
 }, { timestamps: true });
 
 const TestModel = mongoose.model("Test", TestSchema);

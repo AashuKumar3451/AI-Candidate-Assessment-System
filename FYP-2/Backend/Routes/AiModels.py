@@ -9,7 +9,9 @@ from sklearn.metrics.pairwise import cosine_similarity
 import google.generativeai as genai
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
-import os
+import os, json, torch
+from flask import Flask
+import traceback
 
 from dotenv import load_dotenv
 load_dotenv()  # Load environment variables from .env file
@@ -81,27 +83,81 @@ def generate_test():
         data = request.get_json()
         job_description = data.get("jobDescription")
         resume = data.get("resume")
+
         if not job_description or not resume:
             return jsonify({"error": "Missing required fields"}), 400
 
-        gen_model = genai.GenerativeModel("gemini-pro")
+        gen_model = genai.GenerativeModel(model_name="gemini-2.0-flash")
         prompt = f"""
-        Generate 10 technical interview questions based on the job description and the skills that are in job description and aligned with resume.
+        Generate a technical test with 3 sections:
+        1. **5 MCQs** with 4 options each and the correct answer marked.
+        2. **3 logic-based pseudocode questions.**
+        3. **2 theory questions** that require descriptive answers.
+
+        Base the questions on this Job Description and align them with the skills from the resume.
         Job Description: {job_description}
         Resume: {resume}
-        Provide the questions in a numbered list.
-        """
-        response = gen_model.generate_content(prompt)
 
-        # Extract questions properly
-        questions = [q.strip() for q in response.text.split("\n") if q.strip()]
+        Format the output as a JSON object with the following structure:
+        {{
+            "mcqs": [
+                {{
+                    "question": "...",
+                    "options": ["A", "B", "C", "D"],
+                    "answer": "B"
+                }}
+            ],
+            "pseudocode": [
+                "Write a pseudocode to..."
+            ],
+            "theory": [
+                "Explain the concept of..."
+            ]
+        }}
+        """
+
+        response = gen_model.generate_content(prompt)
+        generated_text = response.candidates[0].content.parts[0].text.strip()
+
+        # --------- ✅ Extract actual JSON from Gemini output ----------
+        import re
+        json_match = re.search(r'\{.*\}', generated_text, re.DOTALL)
+        if not json_match:
+            print("Generated Text (Invalid JSON):", generated_text)
+            return jsonify({"error": "Could not extract JSON from response."}), 500
+
+        raw_json = json_match.group()
+
+        try:
+            questions = json.loads(raw_json)
+        except json.JSONDecodeError as e:
+            print("Extracted JSON string:", raw_json)
+            return jsonify({"error": "Failed to parse JSON", "details": str(e)}), 500
+
+        # --------- ✅ Fix MCQ answers like "A"/"B" to actual text ----------
+        # for mcq in questions.get("mcqs", []):
+        #     answer = mcq.get("answer")
+        #     options = mcq.get("options", [])
+        #     if isinstance(answer, str) and answer.upper() in "ABCD":
+        #         index = "ABCD".index(answer.upper())
+        #         if index < len(options):
+        #             mcq["answer"] = options[index]
+
+        # --------- ✅ Validate structure ----------
+        for section in ['mcqs', 'pseudocode', 'theory']:
+            if section not in questions:
+                return jsonify({"error": f"Missing section: {section}"}), 400
+
         return jsonify({"questions": questions, "success": True})
+
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
+
 
 @app.route('/test-scan', methods=['POST'])
 def scan_test():
-    """Evaluates test answers and generates a detailed report."""
     try:
         data = request.get_json()
         questions = data.get("questions")
@@ -110,17 +166,33 @@ def scan_test():
         if not questions or not answers or not candidate_name:
             return jsonify({"error": "Missing required fields"}), 400
 
+        gen_model = genai.GenerativeModel("gemini-2.0-flash")
 
-        gen_model = genai.GenerativeModel("gemini-pro")
-        prompt = "Evaluate the following answers on a scale of 0-10 with an explanation for each:\n"
+        prompt = f"Evaluate the following test answers by {candidate_name} on a scale of 0 to 10. For each question, provide a score and a brief explanation of the evaluation:\n"
 
-        for i, (q, a) in enumerate(zip(questions, answers), 1):
-            prompt += f"\n{i}. Question: {q}\n   Answer: {a}\n"
+        section_titles = {
+            "mcqs": "MCQs",
+            "pseudocode": "Pseudocode",
+            "theory": "Theory"
+        }
+
+        all_qna = []
+        for section in ["mcqs", "pseudocode", "theory"]:
+            q_list = questions.get(section, [])
+            a_list = answers.get(section, [])
+            prompt += f"\n=== {section_titles[section]} ===\n"
+            for i, (q, a) in enumerate(zip(q_list, a_list), 1):
+                if section == "mcqs":
+                    q_text = f"{q.get('question')} Options: {q.get('options')}"
+                else:
+                    q_text = q
+                prompt += f"{i}. Question: {q_text}\n   Answer: {a}\n"
+                all_qna.append((section, q_text, a))
 
         response = gen_model.generate_content(prompt)
         evaluation = response.text or ""
 
-
+        # Extract scores and explanations
         scores, explanations = [], []
         for line in evaluation.split("\n"):
             score_match = re.search(r"(\d+(?:\.\d+)?)/10", line)
@@ -131,18 +203,19 @@ def scan_test():
 
         final_score = sum(scores) / len(scores) if scores else 0
 
-        # ✅ Generate PDF report
+        # Generate PDF report
         pdf_buffer = io.BytesIO()
         c = canvas.Canvas(pdf_buffer, pagesize=letter)
         y_position = 750
-
         c.drawString(100, y_position, f"Test Report for {candidate_name}")
         y_position -= 30
         c.drawString(100, y_position, f"Final Score: {final_score:.2f}/10")
         y_position -= 40
 
-        for i, (q, a, s, exp) in enumerate(zip(questions, answers, scores, explanations), 1):
-            c.drawString(100, y_position, f"{i}. {q}")
+        for i, (section, q, a) in enumerate(all_qna, 1):
+            s = scores[i - 1] if i - 1 < len(scores) else "-"
+            exp = explanations[i - 1] if i - 1 < len(explanations) else "Not available"
+            c.drawString(100, y_position, f"{i}. [{section.upper()}] {q}")
             y_position -= 20
             c.drawString(120, y_position, f"Answer: {a}")
             y_position -= 20
@@ -150,22 +223,24 @@ def scan_test():
             y_position -= 20
             c.drawString(120, y_position, f"Explanation: {exp}")
             y_position -= 40
-
-            if y_position < 50:
+            if y_position < 100:
                 c.showPage()
                 y_position = 750
 
         c.save()
         pdf_buffer.seek(0)
+        encoded_pdf = base64.b64encode(pdf_buffer.getvalue()).decode("utf-8")
 
         return jsonify({
             "success": True,
             "finalScore": final_score,
-            "testReport": evaluation
+            "testReport": evaluation,
+            "testReportPdf": encoded_pdf
         }), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
