@@ -86,39 +86,55 @@ router.post("/reject/:JID/:CID", async (req, res) => {
   try {
     const hrID = req.userPayload.id;
     const CID = req.params.CID;
+    const JID = req.params.JID;
+    
     if (!(await checkHR(hrID))) {
       return res.status(403).json("No Access Granted.");
     }
+    
     // Find the candidate who applied for this job
     const candidate = await CandidatesModel.findOne({
       _id: CID,
-      jobDescriptionAppliedFor: req.params.JID,
+      jobDescriptionAppliedFor: JID,
     });
-    if(!candidate) {
-      return res.status(400).json("Candidate not found.");
+    
+    if (!candidate) {
+      return res.status(404).json("Candidate not found.");
     }
-    if (candidate && !candidate.isSelectedForInterview) {
-      return res.status(400).json("This candidate was not selected for interview, so cannot be rejected from interview.");
-    }
+    
+    // ✅ FIXED: Allow rejection of any candidate (whether selected for interview or not)
+    // Track if they were previously selected for email context
+    const wasPreviouslySelected = candidate.isSelectedForInterview === true;
+    
+    // Mark as rejected
     candidate.isSelectedForInterview = false;
-    const response = await candidate.save();
-    if (!response) {
-      return res.status(201).json("Error occured.");
+    await candidate.save();
+    
+    // ✅ FIXED: Remove from HR's selected candidates list
+    const hr = await HRModel.findOne({ userID: hrID });
+    if (hr) {
+      hr.selectedCandidatesForInterview = hr.selectedCandidatesForInterview.filter(
+        id => id.toString() !== candidate._id.toString()
+      );
+      await hr.save();
     }
     
     const user = await UserDetailsModel.findById(candidate.userID);
     if (!user) {
-      return res.status(201).json("No user available.");
+      return res.status(404).json("User not found.");
     }
+    
     // ✅ Email will be sent by frontend using EmailJS
     console.log("📨 Email will be sent by frontend using EmailJS");
 
     res.status(200).json({
       message: "Candidate rejected successfully.",
       candidate: candidate.id,
+      wasPreviouslySelected: wasPreviouslySelected,
     });
   } catch (error) {
-    res.status(401).json({ err: error });
+    console.error("Error in interview reject:", error);
+    res.status(500).json({ error: error.message });
   }
 });
 

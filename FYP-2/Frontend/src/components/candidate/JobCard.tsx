@@ -1,10 +1,10 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Job } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CalendarIcon, UploadIcon } from "lucide-react";
+import { CalendarIcon, UploadIcon, CheckCircleIcon, ClockIcon, UserCheckIcon } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useJobs } from "@/context/JobsContext";
 import {
@@ -22,13 +22,32 @@ interface JobCardProps {
 }
 
 const JobCard = ({ job }: JobCardProps) => {
-  const { uploadCV } = useJobs();
+  const { uploadCV, applicationStatus, checkApplicationStatus } = useJobs();
   const [isUploading, setIsUploading] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isCheckingStatus, setIsCheckingStatus] = useState(false);
   
   const postedDate = new Date(job.createdAt);
   const formattedDate = formatDistanceToNow(postedDate, { addSuffix: true });
+  
+  const currentApplicationStatus = applicationStatus[job.id];
+  
+  // Check application status when component mounts
+  useEffect(() => {
+    const checkStatus = async () => {
+      setIsCheckingStatus(true);
+      try {
+        await checkApplicationStatus(job.id);
+      } catch (error) {
+        console.error('Failed to check application status:', error);
+      } finally {
+        setIsCheckingStatus(false);
+      }
+    };
+    
+    checkStatus();
+  }, [job.id, checkApplicationStatus]);
   
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -62,6 +81,81 @@ const JobCard = ({ job }: JobCardProps) => {
     }
   };
 
+  const getApplicationStatusDisplay = () => {
+    if (isCheckingStatus) {
+      return {
+        text: "Checking status...",
+        icon: <ClockIcon className="h-4 w-4 mr-2" />,
+        variant: "secondary" as const,
+        disabled: true
+      };
+    }
+
+    if (!currentApplicationStatus?.hasApplied) {
+      return {
+        text: "Upload CV",
+        icon: <UploadIcon className="h-4 w-4 mr-2" />,
+        variant: "default" as const,
+        disabled: false
+      };
+    }
+
+    // Application exists - show status based on selection
+    if (currentApplicationStatus.isSelectedForInterview) {
+      return {
+        text: "Selected for Interview",
+        icon: <UserCheckIcon className="h-4 w-4 mr-2" />,
+        variant: "default" as const,
+        disabled: true,
+        className: "bg-green-100 text-green-800 hover:bg-green-100"
+      };
+    }
+
+    if (currentApplicationStatus.isSelectedForTest) {
+      return {
+        text: "Selected for Test",
+        icon: <CheckCircleIcon className="h-4 w-4 mr-2" />,
+        variant: "default" as const,
+        disabled: true,
+        className: "bg-blue-100 text-blue-800 hover:bg-blue-100"
+      };
+    }
+
+    // Applied but not selected yet
+    return {
+      text: "Application Submitted",
+      icon: <CheckCircleIcon className="h-4 w-4 mr-2" />,
+      variant: "secondary" as const,
+      disabled: true,
+      className: "bg-gray-100 text-gray-800 hover:bg-gray-100"
+    };
+  };
+
+  const getApplicationStatusInfo = () => {
+    if (!currentApplicationStatus?.hasApplied) return null;
+
+    const appliedDate = currentApplicationStatus.appliedAt 
+      ? formatDistanceToNow(new Date(currentApplicationStatus.appliedAt), { addSuffix: true })
+      : null;
+
+    return (
+      <div className="mt-2 p-3 bg-gray-50 rounded-lg border">
+        <div className="flex items-center text-sm text-gray-600 mb-1">
+          <CheckCircleIcon className="h-4 w-4 mr-2 text-green-600" />
+          <span className="font-medium">Application Status</span>
+        </div>
+        <div className="text-xs text-gray-500">
+          Applied {appliedDate}
+          {currentApplicationStatus.resumeScore && (
+            <span className="ml-2">
+              • Score: {currentApplicationStatus.resumeScore}%
+            </span>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <>
       <Card>
@@ -92,9 +186,16 @@ const JobCard = ({ job }: JobCardProps) => {
                 <span className="font-medium">Location:</span> {job.location}
               </div>
               
-              <Button onClick={() => setIsDialogOpen(true)}>
-                <UploadIcon className="h-4 w-4 mr-2" />
-                Upload CV
+              {getApplicationStatusInfo()}
+              
+              <Button 
+                onClick={() => setIsDialogOpen(true)}
+                disabled={getApplicationStatusDisplay().disabled}
+                variant={getApplicationStatusDisplay().variant}
+                className={getApplicationStatusDisplay().className}
+              >
+                {getApplicationStatusDisplay().icon}
+                {getApplicationStatusDisplay().text}
               </Button>
             </div>
           </div>
@@ -104,45 +205,78 @@ const JobCard = ({ job }: JobCardProps) => {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Upload your CV</DialogTitle>
+            <DialogTitle>
+              {currentApplicationStatus?.hasApplied ? "Application Status" : "Upload your CV"}
+            </DialogTitle>
             <DialogDescription>
-              Apply for {job.title} at {job.company} by uploading your CV.
+              {currentApplicationStatus?.hasApplied 
+                ? `You have already applied for ${job.title} at ${job.company}.`
+                : `Apply for ${job.title} at ${job.company} by uploading your CV.`
+              }
             </DialogDescription>
           </DialogHeader>
           
           <div className="grid gap-4 py-4">
-            <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-6">
-              <UploadIcon className="h-8 w-8 text-muted-foreground mb-2" />
-              
-              <div className="flex flex-col items-center text-center">
-                <label htmlFor="cv-upload" className="cursor-pointer text-brand-blue hover:underline">
-                  Click to upload your CV
-                </label>
-                <input
-                  id="cv-upload"
-                  type="file"
-                  accept=".pdf"
-                  className="hidden"
-                  onChange={handleFileChange}
-                />
-                <p className="text-xs text-muted-foreground mt-1">PDF format only</p>
-              </div>
-              
-              {selectedFile && (
-                <div className="mt-4 text-sm">
-                  Selected: <span className="font-medium">{selectedFile.name}</span>
+            {currentApplicationStatus?.hasApplied ? (
+              <div className="flex flex-col items-center justify-center border-2 border-dashed border-green-300 rounded-lg p-6 bg-green-50">
+                <CheckCircleIcon className="h-8 w-8 text-green-600 mb-2" />
+                <div className="text-center">
+                  <p className="font-medium text-green-800 mb-2">Application Submitted Successfully!</p>
+                  <div className="text-sm text-green-600 space-y-1">
+                    {currentApplicationStatus.appliedAt && (
+                      <p>Applied: {formatDistanceToNow(new Date(currentApplicationStatus.appliedAt), { addSuffix: true })}</p>
+                    )}
+                    {currentApplicationStatus.resumeScore && (
+                      <p>Resume Score: {currentApplicationStatus.resumeScore}%</p>
+                    )}
+                    {currentApplicationStatus.isSelectedForTest && (
+                      <p className="font-medium">✅ Selected for Test</p>
+                    )}
+                    {currentApplicationStatus.isSelectedForInterview && (
+                      <p className="font-medium">✅ Selected for Interview</p>
+                    )}
+                    {!currentApplicationStatus.isSelectedForTest && !currentApplicationStatus.isSelectedForInterview && (
+                      <p>Status: Under Review</p>
+                    )}
+                  </div>
                 </div>
-              )}
-            </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-6">
+                <UploadIcon className="h-8 w-8 text-muted-foreground mb-2" />
+                
+                <div className="flex flex-col items-center text-center">
+                  <label htmlFor="cv-upload" className="cursor-pointer text-brand-blue hover:underline">
+                    Click to upload your CV
+                  </label>
+                  <input
+                    id="cv-upload"
+                    type="file"
+                    accept=".pdf"
+                    className="hidden"
+                    onChange={handleFileChange}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">PDF format only</p>
+                </div>
+                
+                {selectedFile && (
+                  <div className="mt-4 text-sm">
+                    Selected: <span className="font-medium">{selectedFile.name}</span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-              Cancel
+              {currentApplicationStatus?.hasApplied ? "Close" : "Cancel"}
             </Button>
-            <Button onClick={handleSubmit} disabled={!selectedFile || isUploading}>
-              {isUploading ? "Uploading..." : "Submit Application"}
-            </Button>
+            {!currentApplicationStatus?.hasApplied && (
+              <Button onClick={handleSubmit} disabled={!selectedFile || isUploading}>
+                {isUploading ? "Uploading..." : "Submit Application"}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

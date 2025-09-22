@@ -179,6 +179,7 @@ const CVCard = ({ cv }: CVCardProps) => {
         throw new Error(data?.error || "Rejection failed");
       }
 
+      const data = await response.json();
       setIsRejected(true);
       
       // Send test rejection email using EmailJS
@@ -194,9 +195,15 @@ const CVCard = ({ cv }: CVCardProps) => {
       const emailSent = await EmailService.sendTestRejectionEmail(emailData);
       
       if (emailSent) {
-        toast.success("Candidate rejected and email sent!");
+        const message = data.wasPreviouslySelected 
+          ? "Candidate rejected from test and email sent!" 
+          : "Candidate rejected for test and email sent!";
+        toast.success(message);
       } else {
-        toast.success("Candidate rejected, but email failed to send.");
+        const message = data.wasPreviouslySelected 
+          ? "Candidate rejected from test, but email failed to send." 
+          : "Candidate rejected for test, but email failed to send.";
+        toast.success(message);
       }
     } catch (error: any) {
       console.error(error);
@@ -288,9 +295,15 @@ const handleRejectFromInterview = async () => {
     const emailSent = await EmailService.sendInterviewRejectionEmail(emailData);
     
     if (emailSent) {
-      toast.success("Candidate rejected for interview and email sent!");
+      const message = data.wasPreviouslySelected 
+        ? "Candidate rejected from interview and email sent!" 
+        : "Candidate rejected for interview and email sent!";
+      toast.success(message);
     } else {
-      toast.success("Candidate rejected for interview, but email failed to send.");
+      const message = data.wasPreviouslySelected 
+        ? "Candidate rejected from interview, but email failed to send." 
+        : "Candidate rejected for interview, but email failed to send.";
+      toast.success(message);
     }
   } catch (error: any) {
     console.error("Interview rejection error:", error);
@@ -334,7 +347,7 @@ const handleRejectFromInterview = async () => {
             <div className="mb-4">
               <div className="flex items-center justify-between mb-1">
                 <div className="text-sm font-medium">Match Score</div>
-                <div className="text-sm font-semibold">{cv.score ?? "N/A"}%</div>
+                <div className="text-sm font-semibold">{cv.score ?? "N/A"}</div>
               </div>
             </div>
 
@@ -349,7 +362,7 @@ const handleRejectFromInterview = async () => {
       </Button>
       {testScore !== null && (
         <div className="text-sm text-muted-foreground">
-          Test Score: <span className="font-semibold">{testScore}</span>%
+          Test Score: <span className="font-semibold">{testScore}</span>
         </div>
       )}
     </div>

@@ -35,6 +35,44 @@ const checkCandidate = async (userID) => {
   }
 };
 
+// ✅ Check if candidate has already applied for a job (GET /check-application/:JID)
+router.get("/check-application/:JID", async (req, res) => {
+  try {
+    const userID = req.userPayload?.id;
+    const jobID = req.params.JID;
+
+    if (!userID) {
+      return res.status(401).json("User not authenticated.");
+    }
+
+    if (!(await checkCandidate(userID))) {
+      return res.status(403).json("No Access Granted.");
+    }
+
+    // Check if the candidate already applied for this job
+    const existingCandidate = await CandidatesModel.findOne({
+      userID,
+      jobDescriptionAppliedFor: jobID,
+    });
+
+    const hasApplied = !!existingCandidate;
+    
+    res.status(200).json({
+      hasApplied,
+      applicationData: hasApplied ? {
+        appliedAt: existingCandidate.createdAt,
+        isSelectedForTest: existingCandidate.isSelectedForTest,
+        isSelectedForInterview: existingCandidate.isSelectedForInterview,
+        resumeScore: existingCandidate.resumeScore
+      } : null
+    });
+
+  } catch (error) {
+    console.error("Error checking application status:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // ✅ Apply for a job (POST /apply/:JID)
 router.post("/apply/:JID", upload.single("resume"), async (req, res) => {
   try {
@@ -479,39 +517,55 @@ router.post("/reject-resume/:JID/:CID", async (req, res) => {
   try {
     const hrID = req.userPayload.id;
     const CID = req.params.CID;
+    const JID = req.params.JID;
+    
     if (!(await checkHR(hrID))) {
       return res.status(403).json("No Access Granted.");
     }
+    
     // Find the candidate who applied for this job
     const candidate = await CandidatesModel.findOne({
       _id: CID,
-      jobDescriptionAppliedFor: req.params.JID,
+      jobDescriptionAppliedFor: JID,
     });
-    if(!candidate) {
-      return res.status(400).json("Candidate not found.");
+    
+    if (!candidate) {
+      return res.status(404).json("Candidate not found.");
     }
-    if (candidate && !candidate.isSelectedForTest) {
-      return res.status(400).json("This candidate is already rejected for this test.");
-    }
+    
+    // ✅ FIXED: Allow rejection of any candidate (whether selected or not)
+    // Track if they were previously selected for email context
+    const wasPreviouslySelected = candidate.isSelectedForTest === true;
+    
+    // Mark as rejected
     candidate.isSelectedForTest = false;
-    const response = await candidate.save();
-    if (!response) {
-      return res.status(201).json("Error occured.");
+    await candidate.save();
+    
+    // ✅ FIXED: Remove from HR's selected candidates list
+    const hr = await HRModel.findOne({ userID: hrID });
+    if (hr) {
+      hr.selectedCandidatesForTest = hr.selectedCandidatesForTest.filter(
+        id => id.toString() !== candidate._id.toString()
+      );
+      await hr.save();
     }
 
     const user = await UserDetailsModel.findById(candidate.userID);
     if (!user) {
-      return res.status(201).json("No user available.");
+      return res.status(404).json("User not found.");
     }
+    
     // ✅ Email will be sent by frontend using EmailJS
     console.log("📨 Email will be sent by frontend using EmailJS");
 
     res.status(200).json({
       message: "Candidate rejected successfully.",
       candidate: candidate.id,
+      wasPreviouslySelected: wasPreviouslySelected,
     });
   } catch (error) {
-    res.status(401).json({ err: error });
+    console.error("Error in reject-resume:", error);
+    res.status(500).json({ error: error.message });
   }
 });
 

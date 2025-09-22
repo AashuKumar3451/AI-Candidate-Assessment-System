@@ -31,7 +31,7 @@ mongoose.connect(URL, {
   useUnifiedTopology: true,
 })
 .then(() => {
-  console.log(`✅ Connected to MongoDB at: ${URL}`);
+  console.log(`✅ Connected to MongoDB`);
 })
 .catch((error) => {
   console.error(`❌ MongoDB connection error: ${error.message}`);

@@ -6,14 +6,24 @@ import { useAuth } from './AuthContext';
 import { toast } from '@/components/ui/sonner';
 import { API_CONFIG } from '@/lib/config';
 
+interface ApplicationStatus {
+  hasApplied: boolean;
+  appliedAt?: string;
+  isSelectedForTest?: boolean;
+  isSelectedForInterview?: boolean;
+  resumeScore?: number;
+}
+
 interface JobsContextType {
   jobs: Job[];
   cvsByJob: Record<string, CV[]>;
+  applicationStatus: Record<string, ApplicationStatus>;
   isLoading: boolean;
   createJob: (jobData: Omit<Job, 'id' | 'hrId' | 'createdAt'> & { companyName: string, details: string }) => Promise<void>;
   fetchJobs: () => Promise<void>;
   uploadCV: (jobId: string, file: File) => Promise<void>;
   fetchCVsForJob: (jobId: string) => Promise<void>;
+  checkApplicationStatus: (jobId: string) => Promise<ApplicationStatus>;
 }
 
 const JobsContext = createContext<JobsContextType | undefined>(undefined);
@@ -24,6 +34,7 @@ export const JobsProvider = ({ children }: { children: React.ReactNode }) => {
   const { user } = useAuth();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [cvsByJob, setCvsByJob] = useState<Record<string, CV[]>>({});
+  const [applicationStatus, setApplicationStatus] = useState<Record<string, ApplicationStatus>>({});
   const [isLoading, setIsLoading] = useState(false);
 
   const getAuthHeaders = () => {
@@ -418,6 +429,46 @@ const transformedCVs: CV[] = filteredCandidates.map((report: any) => ({
   };
 */
 
+const checkApplicationStatus = async (jobId: string): Promise<ApplicationStatus> => {
+  if (!user || user.role !== 'candidate') {
+    return { hasApplied: false };
+  }
+
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_BASE_URL}/jd/check-application/${jobId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to check application status');
+    }
+
+    const data = await response.json();
+    const status: ApplicationStatus = {
+      hasApplied: data.hasApplied,
+      appliedAt: data.applicationData?.appliedAt,
+      isSelectedForTest: data.applicationData?.isSelectedForTest,
+      isSelectedForInterview: data.applicationData?.isSelectedForInterview,
+      resumeScore: data.applicationData?.resumeScore
+    };
+
+    // Update the application status in state
+    setApplicationStatus(prev => ({
+      ...prev,
+      [jobId]: status
+    }));
+
+    return status;
+  } catch (error) {
+    console.error('Error checking application status:', error);
+    return { hasApplied: false };
+  }
+};
+
 const uploadCV = async (jobId: string, file: File) => {
   if (!user || user.role !== 'candidate') {
     toast.error('Only candidates can upload CVs.');
@@ -453,6 +504,9 @@ const uploadCV = async (jobId: string, file: File) => {
     }
 
     toast.success('CV uploaded successfully! It will be processed by our AI system.');
+    
+    // Update application status after successful upload
+    await checkApplicationStatus(jobId);
   } catch (error) {
     console.error('CV Upload Error:', error);
   } finally {
@@ -467,11 +521,13 @@ const uploadCV = async (jobId: string, file: File) => {
     <JobsContext.Provider value={{
       jobs,
       cvsByJob,
+      applicationStatus,
       isLoading,
       createJob,
       fetchJobs,
       uploadCV,
-      fetchCVsForJob
+      fetchCVsForJob,
+      checkApplicationStatus
     }}>
       {children}
     </JobsContext.Provider>
