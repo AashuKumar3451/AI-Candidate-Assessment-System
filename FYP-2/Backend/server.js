@@ -48,7 +48,7 @@ const app = express();
 configDotenv({ path: ".env" });
 
 app.use(cors({
-  origin: 'http://localhost:8081', // ✅ Allow frontend
+  origin: ['http://localhost:8080', 'http://localhost:8081'], // ✅ Allow both frontend ports
   credentials: true
 }));
 //app.use(bodyParser.json());
@@ -60,9 +60,6 @@ app.use(bodyParser.urlencoded({ extended: true, limit: '20mb' }));
 
 app.use("/auth", authRoutes);
 app.use('/api/auth', authRoutes);
-app.use("/jd", jwtAuthMiddleware, jdRoutes);
-app.use("/test", jwtAuthMiddleware, testRoutes);
-app.use("/report", jwtAuthMiddleware, reportsRoutes);
 app.use("/api/jd", jwtAuthMiddleware, jdRoutes);
 app.use("/api/test", jwtAuthMiddleware, testRoutes);
 app.use("/api/report", jwtAuthMiddleware, reportsRoutes);

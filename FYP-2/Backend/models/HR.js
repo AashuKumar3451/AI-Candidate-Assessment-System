@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const HRSchema = mongoose.Schema({
   userID: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Users",
+    ref: "UsersDetails",
     required: true,
   },
   createdJobs: [{
@@ -12,11 +12,11 @@ const HRSchema = mongoose.Schema({
   }],
   selectedCandidatesForTest: [{
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Users",
+    ref: "UsersDetails",
   }],
   selectedCandidatesForInterview: [{
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Users" 
+    ref: "UsersDetails" 
   }]
 });
 

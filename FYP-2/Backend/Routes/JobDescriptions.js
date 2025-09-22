@@ -2,7 +2,7 @@ import { Router } from "express";
 import multer from "multer";
 import axios from "axios";
 import { configDotenv } from "dotenv";
-import nodemailer from "nodemailer";
+// import nodemailer from "nodemailer"; // Removed - using EmailJS instead
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -15,39 +15,7 @@ import EmailsModel from "../models/Emails.js";
 import TestModel from "../models/Test.js";
 import HRModel from "../models/HR.js";
 
-// Function to send email and store in DB
-const sendAndStoreEmail = async ({ candidateID, to, message, type }) => {
-  try {
-    // Configure Nodemailer Transporter
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: process.env.EMAIL_USER, // Your Gmail address
-        pass: process.env.EMAIL_PASS, // Your App Password (NOT your real password)
-      },
-    });
-
-    // Email options
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to,
-      subject: `Notification: ${type}`,
-      text: message,
-    };
-
-    // Send email
-    await transporter.sendMail(mailOptions);
-
-    // Store email data in MongoDB
-    const emailRecord = new EmailsModel({ candidateID, message, type });
-    await emailRecord.save();
-
-    return { success: true, message: "Email sent & stored successfully." };
-  } catch (error) {
-    console.error("Error sending email:", error);
-    return { success: false, error: error.message };
-  }
-};
+// Function removed - using EmailJS from frontend instead
 
 const checkHR = async (userID) => {
   try {
@@ -262,6 +230,66 @@ router.get("/applications/:JID", async (req, res) => {
   }
 });
 
+
+
+
+
+router.get("/applications/tested/:JID", async (req, res) => {
+  try {
+    const hrID = req.userPayload.id;
+    if (!(await checkHR(hrID))) {
+      return res.status(403).json("No Access Granted.");
+    }
+
+    const jobID = req.params.JID;
+    const testedCandidates = await CandidatesModel.find({
+      jobDescriptionAppliedFor: jobID,
+      isSelectedForTest: true,
+      resumeScore: { $ne: null }
+    }).populate("userID");
+
+    const formatted = testedCandidates.map((candidate) => ({
+      _id: candidate._id,
+      testScore: candidate.resumeScore,
+      user: {
+        name: candidate.userID.name,
+        email: candidate.userID.email,
+        phone: candidate.userID.phone,
+      },
+    }));
+
+    res.status(200).json({ candidates: formatted });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
 // ✅ Select a candidate for test (POST /select-resume/:JID/:CID)
 router.post("/select-resume/:JID/:CID", async (req, res) => {
   try {
@@ -305,7 +333,8 @@ router.post("/select-resume/:JID/:CID", async (req, res) => {
     hr.selectedCandidatesForTest.push(candidate.id);
     await hr.save();
 
-    const testLink = `https://your-frontend-domain.com/test/${candidate.id}/${req.params.JID}`;
+    const testLink = `http://localhost:8081/test/${candidate.id}/${req.params.JID}`;
+    //const testLink = `http://localhost:8081/test/${req.params.JID}`;
     const emailMessage = `Dear ${user.name},\n\nCongratulations! You have been selected for the test.\nPlease take your test within 3 days using the following link:\n${testLink}\n\nBest regards,\nHR Team`;
 
     const emailResponse = await sendAndStoreEmail({
@@ -325,6 +354,125 @@ router.post("/select-resume/:JID/:CID", async (req, res) => {
     res.status(500).json({ err: error.message });
   }
 });
+*/
+
+
+router.post("/select-resume/:JID/:CID", async (req, res) => {
+try {
+const hrID = req.userPayload.id;
+const CID = req.params.CID;
+const JID = req.params.JID;
+console.log(`📌 HR ${hrID} is selecting candidate ${CID} for job ${JID}`);
+
+// ✅ Check if HR
+const isHR = await checkHR(hrID);
+if (!isHR) {
+  console.warn("❌ Not authorized: User is not an HR.");
+  return res.status(403).json("No Access Granted.");
+}
+
+// ✅ Fetch Candidate
+const candidate = await CandidatesModel.findOne({
+  _id: CID,
+  jobDescriptionAppliedFor: JID,
+});
+if (!candidate) {
+  console.warn("❌ Candidate not found.");
+  return res.status(400).json("Candidate not found.");
+}
+if (candidate.isSelectedForTest) {
+  console.warn("⚠️ Candidate already selected for test.");
+  return res.status(400).json("Already selected.");
+}
+
+candidate.isSelectedForTest = true;
+await candidate.save();
+console.log("✅ Candidate marked as selected:", candidate._id);
+
+// ✅ Get user info
+const user = await UserDetailsModel.findById(candidate.userID);
+if (!user) {
+  console.warn("❌ User details not found.");
+  return res.status(400).json("User not found.");
+}
+
+// ✅ Get JD details
+const jd = await JobDescriptionsModel.findById(JID);
+if (!jd) {
+  console.warn("❌ Job Description not found.");
+  return res.status(400).json("Job Description not found.");
+}
+
+console.log("📨 Sending resume and JD to Python for test generation...");
+const pythonAPI = "http://127.0.0.1:5000/test-generate";
+const testResponse = await axios.post(
+  pythonAPI,
+  {
+    resume: candidate.resumeText || "",
+    jobDescription: jd.details || "",
+  },
+  {
+    headers: { "Content-Type": "application/json" },
+  }
+);
+
+if (!testResponse.data.success) {
+  console.error("❌ Test generation failed from Python API.");
+  return res.status(500).json({ error: "Test generation failed." });
+}
+
+console.log("✅ Test generated:", testResponse.data.questions);
+
+// ✅ Create Test
+const testAccessDeadline = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
+const newTest = new TestModel({
+  candidateID: candidate.userID,
+  jobDescriptionID: JID,
+  questions: testResponse.data.questions,
+  testAccessDeadline,
+});
+
+console.log("📝 Test to be saved:", {
+  candidateID: candidate.userID,
+  jobDescriptionID: JID,
+  deadline: testAccessDeadline,
+});
+
+await newTest.save();
+console.log("✅ Test saved to database:", newTest._id);
+
+// ✅ Update HR record
+const hr = await HRModel.findOne({ userID: hrID });
+if (!hr) {
+  console.warn("⚠️ HR record not found.");
+} else {
+  hr.selectedCandidatesForTest.push(candidate._id);
+  await hr.save();
+  console.log("🧾 HR record updated with selected candidate.");
+}
+
+// ✅ Email will be sent by frontend using EmailJS
+console.log("📨 Email will be sent by frontend using EmailJS");
+
+res.status(200).json({
+  message: "Candidate selected and test created.",
+  candidate: candidate._id,
+  test: newTest,
+});
+} catch (error) {
+console.error("🔥 Error in /select-resume:", error.message);
+return res.status(500).json({ err: error.message });
+}
+});
+
+
+
+
+
+
+
+
+
 
 // ✅ Reject a candidate (POST /reject-resume/:JID/:CID)
 router.post("/reject-resume/:JID/:CID", async (req, res) => {
@@ -355,19 +503,11 @@ router.post("/reject-resume/:JID/:CID", async (req, res) => {
     if (!user) {
       return res.status(201).json("No user available.");
     }
-    const emailMessage = `Dear ${user.name},\n\nSo Sorry! You are not selected for the test. \nYour test details will be sent soon.\n\nBest regards,\nHR Team`;
-    const emailResponse = await sendAndStoreEmail({
-      candidateID: candidate.id,
-      to: user.email,
-      message: emailMessage,
-      type: "test-schedule",
-    });
-    if (!emailResponse.success) {
-      return res.status(500).json({ error: "Email sending failed." });
-    }
+    // ✅ Email will be sent by frontend using EmailJS
+    console.log("📨 Email will be sent by frontend using EmailJS");
 
     res.status(200).json({
-      message: "Candidate rejected and email sent successfully.",
+      message: "Candidate rejected successfully.",
       candidate: candidate.id,
     });
   } catch (error) {
@@ -416,6 +556,7 @@ router.get("/selected-candidates/:JID", async (req, res) => {
 });
 
 // ✅ Fetch all job descriptions (GET /getJD)
+/*
 router.get('/getJD', async (req, res) => {
   try {
     const userID = req.userPayload.id;
@@ -426,6 +567,64 @@ router.get('/getJD', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch job descriptions', details: error.message });
   }
 });
+*/
+
+
+// ✅ Get all available jobs for candidates (GET /getAllJobs)
+router.get('/getAllJobs', async (req, res) => {
+  try {
+    const userID = req.userPayload.id;
+    
+    // Check if user is a candidate
+    const user = await UserDetailsModel.findById(userID);
+    if (!user || user.role !== 'candidate') {
+      return res.status(403).json({ error: "Access denied. Only candidates can view all jobs." });
+    }
+
+    // Get all job descriptions
+    const jds = await JobDescriptionsModel.find({}).populate('hrID', 'userID').populate({
+      path: 'hrID',
+      populate: {
+        path: 'userID',
+        select: 'name email'
+      }
+    });
+
+    res.status(200).json(jds);
+  } catch (error) {
+    res.status(500).json({
+      error: "Failed to fetch job descriptions",
+      details: error.message,
+    });
+  }
+});
+
+// ✅ Get job descriptions for HR users (GET /getJD)
+router.get('/getJD', async (req, res) => {
+  try {
+    const userID = req.userPayload.id;
+
+    // First, find the HR record linked to this user
+    const hr = await HRModel.findOne({ userID });
+
+    if (!hr) {
+      return res.status(404).json({ error: "HR profile not found." });
+    }
+
+    // Now get only job descriptions created by this HR
+    const jds = await JobDescriptionsModel.find({ hrID: hr._id });
+
+    res.status(200).json(jds);
+  } catch (error) {
+    res.status(500).json({
+      error: "Failed to fetch job descriptions",
+      details: error.message,
+    });
+  }
+});
+
+
+
 
 
 export default router;

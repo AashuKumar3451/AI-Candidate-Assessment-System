@@ -12,12 +12,12 @@ router.post("/signup", async (req, res) => {
     if (user.role === "admin") {
       const admin = await UserDetailsModel.findOne({ role: "admin" });
       if (admin) {
-        return res.status(400).json({ message: "Admin already exists." });
+        return res.status(400).json({ error: "Admin already exists." });
       }
     }
     const response = await user.save();
     if (!response) {
-      return res.status(201).json("Error saving the user.");
+      return res.status(500).json({ error: "Error saving the user." });
     }
     if(user.role === "hr"){
       const HR = new HRModel();
@@ -27,7 +27,8 @@ router.post("/signup", async (req, res) => {
     const token = generateJWTToken({ id: response.id });
     res.status(200).json({ user: response, token: token });
   } catch (error) {
-    console.log("Error Occured", error);
+    console.log("Signup Error:", error);
+    res.status(500).json({ error: error.message || "Registration failed" });
   }
 });
 
@@ -36,15 +37,16 @@ router.post("/signin", async (req, res) => {
     const { email, password } = req.body;
     const user = await UserDetailsModel.findOne({ email: email });
     if (!user) {
-      return res.status(400).json("Invalid Username or Password.");
+      return res.status(400).json({ error: "Invalid Username or Password." });
     }
     if (!(await user.comparePass(password))) {
-      return res.status(400).json("Invalid Username or Password.");
+      return res.status(400).json({ error: "Invalid Username or Password." });
     }
     const token = generateJWTToken({ id: user.id });
     res.status(200).json({ user: user, token: token });
   } catch (error) {
-    console.log("Error Occured", error);
+    console.log("Signin Error:", error);
+    res.status(500).json({ error: error.message || "Login failed" });
   }
 });
 
