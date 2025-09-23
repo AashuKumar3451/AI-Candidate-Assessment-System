@@ -70,7 +70,7 @@ app.use(bodyParser.urlencoded({ extended: true, limit: '20mb' }));
 app.use("/auth", authRoutes);
 app.use('/api/auth', authRoutes);
 app.use("/api/jd", jwtAuthMiddleware, jdRoutes);
-app.use("/api/test", jwtAuthMiddleware, testRoutes);
+app.use("/api/test", testRoutes);
 app.use("/api/report", jwtAuthMiddleware, reportsRoutes);
 
 
