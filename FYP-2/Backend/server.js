@@ -52,6 +52,7 @@ app.use(cors({
     'http://localhost:8080', 
     'http://localhost:8081',
     'https://ai-candidate-assessment-system.vercel.app',
+    'https://ai-candidate-frontend.vercel.app',
     'ai-candidate-assessment-system-e87vdiy6o-asheshs-projects.vercel.app',
     'ai-candidate-assessment-system-qqql-kvdkxuqxt-asheshs-projects.vercel.app',
     /\.vercel\.app$/ // Allow all Vercel preview URLs
@@ -78,7 +79,7 @@ app.get('/', (req, res) => {
   res.status(200).json({ message: "Hello There!" });
 });
 
-const PORT = process.env.PORT;
+const PORT = process.env.PORT || 3000;
 
 // Wait for database connection before starting server
 db.once('open', () => {
