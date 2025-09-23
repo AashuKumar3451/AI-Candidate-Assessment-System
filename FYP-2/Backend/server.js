@@ -92,6 +92,6 @@ db.once('open', () => {
 // Handle database connection errors
 db.on('error', (error) => {
   console.error('❌ Database connection error:', error);
-  process.exit(1);
+  // Don't exit in serverless environment - log the error and continue
 });
 
