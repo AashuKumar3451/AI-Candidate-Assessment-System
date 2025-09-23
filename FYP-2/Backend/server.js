@@ -48,7 +48,11 @@ const app = express();
 configDotenv({ path: ".env" });
 
 app.use(cors({
-  origin: ['http://localhost:8080', 'http://localhost:8081'], // ✅ Allow both frontend ports
+  origin: [
+    'http://localhost:8080', 
+    'http://localhost:8081',
+    'https://ai-candidate-assessment-system.vercel.app'
+  ], // ✅ Allow local development and production frontend
   credentials: true
 }));
 //app.use(bodyParser.json());
