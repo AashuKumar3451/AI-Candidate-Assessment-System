@@ -52,9 +52,13 @@ app.use(cors({
     'http://localhost:8080', 
     'http://localhost:8081',
     'https://ai-candidate-assessment-system.vercel.app',
-    'https://ai-candidate-assessment-system-backend.vercel.app'
+    'https://ai-candidate-assessment-system-7axrlivd1-asheshs-projects.vercel.app',
+    'https://ai-candidate-assessment-system-backend.vercel.app',
+    /\.vercel\.app$/ // Allow all Vercel preview URLs
   ], // ✅ Allow local development and production URLs
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-requested-with']
 }));
 //app.use(bodyParser.json());
 
