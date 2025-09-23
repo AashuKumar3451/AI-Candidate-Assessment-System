@@ -26,7 +26,6 @@ const JobCard = ({ job }: JobCardProps) => {
   const [isUploading, setIsUploading] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [isCheckingStatus, setIsCheckingStatus] = useState(false);
   
   const postedDate = new Date(job.createdAt);
   const formattedDate = formatDistanceToNow(postedDate, { addSuffix: true });
@@ -82,16 +81,18 @@ const JobCard = ({ job }: JobCardProps) => {
   };
 
   const getApplicationStatusDisplay = () => {
-    if (isCheckingStatus) {
+    // If no application status is available yet, show upload button
+    if (!currentApplicationStatus) {
       return {
-        text: "Checking status...",
-        icon: <ClockIcon className="h-4 w-4 mr-2" />,
-        variant: "secondary" as const,
-        disabled: true
+        text: "Upload CV",
+        icon: <UploadIcon className="h-4 w-4 mr-2" />,
+        variant: "default" as const,
+        disabled: false
       };
     }
 
-    if (!currentApplicationStatus?.hasApplied) {
+    // If user hasn't applied yet, show upload button
+    if (!currentApplicationStatus.hasApplied) {
       return {
         text: "Upload CV",
         icon: <UploadIcon className="h-4 w-4 mr-2" />,
