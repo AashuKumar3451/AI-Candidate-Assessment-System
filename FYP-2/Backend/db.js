@@ -26,20 +26,26 @@ if (!URL) {
   throw new Error("DB_LOCAL_URL not defined in .env");
 }
 
-mongoose.connect(URL, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-  serverSelectionTimeoutMS: 5000, // Keep trying to send operations for 5 seconds
-  socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
-  bufferMaxEntries: 0, // Disable mongoose buffering
-  bufferCommands: false, // Disable mongoose buffering
-})
-.then(() => {
-  console.log(`✅ Connected to MongoDB`);
-})
-.catch((error) => {
-  console.error(`❌ MongoDB connection error: ${error.message}`);
-});
+// Connect to MongoDB with proper error handling
+const connectDB = async () => {
+  try {
+    await mongoose.connect(URL, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 5000, // Keep trying to send operations for 5 seconds
+      socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
+      bufferMaxEntries: 0, // Disable mongoose buffering
+      bufferCommands: false, // Disable mongoose buffering
+    });
+    console.log(`✅ Connected to MongoDB`);
+  } catch (error) {
+    console.error(`❌ MongoDB connection error: ${error.message}`);
+    process.exit(1); // Exit if database connection fails
+  }
+};
+
+// Call the connection function
+connectDB();
 
 const db = mongoose.connection;
 export default db;

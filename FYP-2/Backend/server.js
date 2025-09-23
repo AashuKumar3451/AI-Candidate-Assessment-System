@@ -52,8 +52,8 @@ app.use(cors({
     'http://localhost:8080', 
     'http://localhost:8081',
     'https://ai-candidate-assessment-system.vercel.app',
-    'https://ai-candidate-assessment-system-7axrlivd1-asheshs-projects.vercel.app',
-    'https://ai-candidate-assessment-system-backend.vercel.app',
+    'ai-candidate-assessment-system-e87vdiy6o-asheshs-projects.vercel.app',
+    'ai-candidate-assessment-system-qqql-kvdkxuqxt-asheshs-projects.vercel.app',
     /\.vercel\.app$/ // Allow all Vercel preview URLs
   ], // ✅ Allow local development and production URLs
   credentials: true,
@@ -79,7 +79,18 @@ app.get('/', (req, res) => {
 });
 
 const PORT = process.env.PORT;
-app.listen(PORT, () => {
-  console.log(`App is listening at ${PORT}`);
+
+// Wait for database connection before starting server
+db.once('open', () => {
+  app.listen(PORT, () => {
+    console.log(`🚀 Server is running on port ${PORT}`);
+    console.log(`✅ Database connection established`);
+  });
+});
+
+// Handle database connection errors
+db.on('error', (error) => {
+  console.error('❌ Database connection error:', error);
+  process.exit(1);
 });
 
