@@ -1,6 +1,6 @@
 
 // API configuration
 export const API_CONFIG = {
-  BASE_URL: 'http://localhost:3000/api', // Replace with your actual API URL
+  BASE_URL: 'https://ai-candidate-assessment-system-backend.vercel.app/api', // Production backend URL
 };
 
