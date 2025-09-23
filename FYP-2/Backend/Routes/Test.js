@@ -19,33 +19,22 @@ const checkCandidate = async (userID) => {
   }
 };
 
-// ✅ Fetch test questions
-router.get("/show/:JID", async (req, res) => {
+// ✅ Fetch test questions (for external candidates via email link)
+router.get("/show/:candidateID/:JID", async (req, res) => {
   const JID = req.params.JID;
-  const userID = req.userPayload?.id;
+  const candidateID = req.params.candidateID;
 
-  console.log(`➡️  GET /test/show/${JID} for user ${userID}`);
+  console.log(`➡️  GET /test/show/${candidateID}/${JID} for external candidate`);
 
   try {
-    if (!userID) {
-      console.warn("⚠️ Missing user ID in token payload");
-      return res.status(401).json({ error: "Unauthorized" });
-    }
-
-    const isCandidate = await checkCandidate(userID);
-    if (!isCandidate) {
-      console.warn("⛔ Not a candidate");
-      return res.status(403).json({ error: "Access denied: Not a candidate" });
-    } 
-
-    const candidate = await CandidatesModel.findOne({ userID });
+    const candidate = await CandidatesModel.findOne({ userID: candidateID });
     if (!candidate) {
       console.warn("⛔ Candidate record not found");
       return res.status(403).json({ error: "No candidate record found." });
     }
 
     const test = await TestModel.findOne({
-      candidateID: candidate.userID,
+      candidateID: candidateID,
       jobDescriptionID: JID,
     });
 
@@ -63,46 +52,29 @@ router.get("/show/:JID", async (req, res) => {
     res.status(200).json({ candidate: test.candidateID, test: test.questions });
 
   } catch (error) {
-    console.error("🔴 Error in /show/:JID:", error);
+    console.error("🔴 Error in /show/:candidateID/:JID:", error);
     res.status(500).json({ error: error.message });
   }
 });
 
-// ✅ Submit and evaluate answers
-router.post("/submit/:JID", async (req, res) => {
-  const userID = req.userPayload?.id;
+// ✅ Submit and evaluate answers (for external candidates via email link)
+router.post("/submit/:candidateID/:JID", async (req, res) => {
+  const candidateID = req.params.candidateID;
   const JID = req.params.JID;
-  console.log(`➡️  POST /test/submit/${JID} for user ${userID}`);
+  console.log(`➡️  POST /test/submit/${candidateID}/${JID} for external candidate`);
 
   try {
-    if (!userID) {
-      console.warn("⚠️ Missing user ID in token payload");
-      return res.status(401).json({ error: "Unauthorized" });
-    }
-
-    const isCandidate = await checkCandidate(userID);
-    if (!isCandidate) {
-      console.warn("⛔ Not a candidate");
-      return res.status(403).json({ error: "Access denied: Not a candidate" });
-    }
-
     const { mcqs, pseudocode, theory } = req.body;
     console.log("📦 Received answers:", { mcqs, pseudocode, theory });
 
-    const user = await UsersDetailsModel.findById(userID);
-    if (!user) {
-      console.error("⛔ User not found");
-      return res.status(403).json({ error: "User not available." });
-    }
-
-    const candidate = await CandidatesModel.findOne({ userID });
+    const candidate = await CandidatesModel.findOne({ userID: candidateID });
     if (!candidate) {
       console.error("⛔ Candidate record not found");
       return res.status(403).json({ error: "Candidate not found." });
     }
 
     const test = await TestModel.findOne({
-      candidateID: candidate.userID,
+      candidateID: candidateID,
       jobDescriptionID: JID,
     });
 
@@ -139,7 +111,7 @@ router.post("/submit/:JID", async (req, res) => {
     const response = await axios.post(pythonAPI, {
       questions: test.questions,
       answers: test.answers,
-      candidateName: user.name,
+      candidateName: candidate.candidateName || "Candidate",
     });
 
     if (!response.data.success) {
@@ -151,7 +123,7 @@ router.post("/submit/:JID", async (req, res) => {
 
     // Save the report
     const reportDoc = new TestReportModel({
-      candidateID: candidate.userID,
+      candidateID: candidateID,
       jobDescriptionID: JID,
       reportText: testReport,
       reportPdf: Buffer.from(testReportPdf, "base64"),
@@ -173,7 +145,7 @@ router.post("/submit/:JID", async (req, res) => {
     });
 
   } catch (error) {
-    console.error("🔴 Error in /submit/:JID:", error);
+    console.error("🔴 Error in /submit/:candidateID/:JID:", error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -181,30 +153,21 @@ router.post("/submit/:JID", async (req, res) => {
 // ✅ Fetch submitted report
 
 
-router.get("/my-report/:JID", async (req, res) => {
-  const userID = req.userPayload?.id;
+// ✅ Fetch submitted report (for external candidates via email link)
+router.get("/my-report/:candidateID/:JID", async (req, res) => {
+  const candidateID = req.params.candidateID;
   const JID = req.params.JID;
 
-  console.log(`➡️  GET /test/my-report/${JID} for user ${userID}`);
+  console.log(`➡️  GET /test/my-report/${candidateID}/${JID} for external candidate`);
 
   try {
-    if (!userID) {+
-      console.warn("⚠️ Missing user ID in token payload");
-      return res.status(401).json({ error: "Unauthorized" });
-    }
-
-    const isCandidate = await checkCandidate(userID);
-    if (!isCandidate) {
-      return res.status(403).json({ error: "Access denied: Not a candidate" });
-    }
-
-    const candidate = await CandidatesModel.findOne({ userID });
+    const candidate = await CandidatesModel.findOne({ userID: candidateID });
     if (!candidate) {
       return res.status(403).json({ error: "Candidate not found." });
     }
 
     const report = await TestReportModel.findOne({
-      candidateID: candidate.userID,
+      candidateID: candidateID,
       jobDescriptionID: JID,
     });
 
@@ -220,35 +183,12 @@ router.get("/my-report/:JID", async (req, res) => {
     });
 
   } catch (error) {
-    console.error("🔴 Error in /my-report/:JID:", error);
+    console.error("🔴 Error in /my-report/:candidateID/:JID:", error);
     res.status(500).json({ error: error.message });
   }
 });
 
-// GET report for a specific candidate (HR only)
-router.get("/report/:candidateID/:JID", async (req, res) => {
-  const userID = req.userPayload?.id;
-  const JID = req.params.JID;
-
-  try {
-    const report = await TestReportModel.findOne({
-      candidateID,
-      jobDescriptionID: JID,
-    });
-
-    if (!report) {
-      return res.status(404).json({ error: "Report not found" });
-    }
-
-    res.status(200).json({
-      reportText: report.reportText,
-      reportPdfBase64: report.reportPdf.toString("base64"),
-    });
-  } catch (error) {
-    console.error("Error fetching report for HR:", error);
-    res.status(500).json({ error: "Server error" });
-  }
-});
+// Note: HR report route moved to Reports.js with proper authentication
 
 
 
