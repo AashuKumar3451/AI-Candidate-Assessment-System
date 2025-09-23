@@ -51,10 +51,9 @@ app.use(cors({
   origin: [
     'http://localhost:8080', 
     'http://localhost:8081',
-    'https://ai-candidate-assessment-system.vercel.app',
     'https://ai-candidate-frontend.vercel.app',
-    'ai-candidate-assessment-system-e87vdiy6o-asheshs-projects.vercel.app',
-    'ai-candidate-assessment-system-qqql-kvdkxuqxt-asheshs-projects.vercel.app',
+    'https://ai-candidate-backend.vercel.app',
+    
     /\.vercel\.app$/ // Allow all Vercel preview URLs
   ], // ✅ Allow local development and production URLs
   credentials: true,
