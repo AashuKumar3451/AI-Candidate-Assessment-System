@@ -46,10 +46,9 @@ const TestPage = () => {
                 return;
             }
 
-            const response = await fetch(`${API_CONFIG.BASE_URL}/test/show/${JID}`, {
+            const response = await fetch(`${API_CONFIG.BASE_URL}/test/show/${candidateId}/${JID}`, {
                 method: 'GET',
                 headers: {
-                    'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 }
             });
@@ -121,10 +120,9 @@ const TestPage = () => {
                 theory: theoryAnswers
             };
 
-            const response = await fetch(`${API_CONFIG.BASE_URL}/test/submit/${JID}`, {
+            const response = await fetch(`${API_CONFIG.BASE_URL}/test/submit/${candidateId}/${JID}`, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(submission)
@@ -171,9 +169,9 @@ const TestPage = () => {
                 return;
             }
 
-            const response = await fetch(`${API_CONFIG.BASE_URL}/test/my-report/${JID}`, {
+            const response = await fetch(`${API_CONFIG.BASE_URL}/test/my-report/${candidateId}/${JID}`, {
                 headers: {
-                    'Authorization': `Bearer ${token}`
+                    'Content-Type': 'application/json'
                 }
             });
 
