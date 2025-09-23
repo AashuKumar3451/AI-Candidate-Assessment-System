@@ -27,14 +27,14 @@ router.get("/show/:candidateID/:JID", async (req, res) => {
   console.log(`➡️  GET /test/show/${candidateID}/${JID} for external candidate`);
 
   try {
-    const candidate = await CandidatesModel.findOne({ userID: candidateID });
+    const candidate = await CandidatesModel.findById(candidateID);
     if (!candidate) {
       console.warn("⛔ Candidate record not found");
       return res.status(403).json({ error: "No candidate record found." });
     }
 
     const test = await TestModel.findOne({
-      candidateID: candidateID,
+      candidateID: candidate.userID,
       jobDescriptionID: JID,
     });
 
@@ -67,14 +67,14 @@ router.post("/submit/:candidateID/:JID", async (req, res) => {
     const { mcqs, pseudocode, theory } = req.body;
     console.log("📦 Received answers:", { mcqs, pseudocode, theory });
 
-    const candidate = await CandidatesModel.findOne({ userID: candidateID });
+    const candidate = await CandidatesModel.findById(candidateID);
     if (!candidate) {
       console.error("⛔ Candidate record not found");
       return res.status(403).json({ error: "Candidate not found." });
     }
 
     const test = await TestModel.findOne({
-      candidateID: candidateID,
+      candidateID: candidate.userID,
       jobDescriptionID: JID,
     });
 
@@ -123,7 +123,7 @@ router.post("/submit/:candidateID/:JID", async (req, res) => {
 
     // Save the report
     const reportDoc = new TestReportModel({
-      candidateID: candidateID,
+      candidateID: candidate.userID,
       jobDescriptionID: JID,
       reportText: testReport,
       reportPdf: Buffer.from(testReportPdf, "base64"),
@@ -161,13 +161,13 @@ router.get("/my-report/:candidateID/:JID", async (req, res) => {
   console.log(`➡️  GET /test/my-report/${candidateID}/${JID} for external candidate`);
 
   try {
-    const candidate = await CandidatesModel.findOne({ userID: candidateID });
+    const candidate = await CandidatesModel.findById(candidateID);
     if (!candidate) {
       return res.status(403).json({ error: "Candidate not found." });
     }
 
     const report = await TestReportModel.findOne({
-      candidateID: candidateID,
+      candidateID: candidate.userID,
       jobDescriptionID: JID,
     });
 
