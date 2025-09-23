@@ -95,3 +95,6 @@ db.on('error', (error) => {
   // Don't exit in serverless environment - log the error and continue
 });
 
+// Export the app for Vercel serverless functions
+export default app;
+
