@@ -132,7 +132,8 @@ router.post("/submit/:JID", async (req, res) => {
     console.log("✅ Answers saved to DB");
 
     // Send for evaluation
-    const pythonAPI = "http://127.0.0.1:5000/test-scan";
+    const AI_SERVICE_URL = process.env.AI_SERVICE_URL || "http://127.0.0.1:5000";
+    const pythonAPI = `${AI_SERVICE_URL}/test-scan`;
     console.log("📤 Sending to Python API:", pythonAPI);
 
     const response = await axios.post(pythonAPI, {

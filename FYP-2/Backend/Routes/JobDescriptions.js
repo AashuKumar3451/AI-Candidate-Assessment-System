@@ -131,8 +131,9 @@ router.post("/apply/:JID", upload.single("resume"), async (req, res) => {
     const jobDescription = JD.details;
 
     // Ensure large payloads are handled properly
+    const AI_SERVICE_URL = process.env.AI_SERVICE_URL || "http://localhost:5000";
     const flaskResponse = await axios.post(
-      "http://localhost:5000/resume-scan",
+      `${AI_SERVICE_URL}/resume-scan`,
       {
         pdf: buffer.toString("base64"),
         jobDescription: jobDescription,
@@ -351,7 +352,8 @@ router.post("/select-resume/:JID/:CID", async (req, res) => {
     const jd = await JobDescriptionsModel.findById(req.params.JID);
     if (!jd) return res.status(400).json("Job Description not found.");
 
-    const pythonAPI = "http://127.0.0.1:5000/test-generate";
+    const AI_SERVICE_URL = process.env.AI_SERVICE_URL || "http://127.0.0.1:5000";
+    const pythonAPI = `${AI_SERVICE_URL}/test-generate`;
     const testResponse = await axios.post(pythonAPI, {
       resume: candidate.resumeText || "",
       jobDescription: jd.details || "",
@@ -442,7 +444,8 @@ if (!jd) {
 }
 
 console.log("📨 Sending resume and JD to Python for test generation...");
-const pythonAPI = "http://127.0.0.1:5000/test-generate";
+const AI_SERVICE_URL = process.env.AI_SERVICE_URL || "http://127.0.0.1:5000";
+const pythonAPI = `${AI_SERVICE_URL}/test-generate`;
 const testResponse = await axios.post(
   pythonAPI,
   {

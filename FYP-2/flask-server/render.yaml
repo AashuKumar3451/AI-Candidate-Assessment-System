@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: ai-candidate-assessment
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn AiModels:app
+    envVars:
+      - key: GOOGLE_API_KEY
+        sync: false
