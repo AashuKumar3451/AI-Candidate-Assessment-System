@@ -139,7 +139,7 @@ const CVCard = ({ cv }: CVCardProps) => {
         candidateEmail: cv.candidateEmail || cv.candidateId, // Use candidateEmail if available, fallback to candidateId
         jobTitle: "Software Engineer", // You might want to get this from job data
         companyName: "Your Company", // You might want to get this from job data
-        testLink: `https://ai-candidate-backend.vercel.app/test/${candidateId}/${jobId}`, // Test link
+        testLink: `https://ai-candidate-backend.vercel.app/api/test/${candidateId}/${jobId}`, // Test link
         hrName: user?.name || "HR Team",
         hrEmail: user?.email || "hr@company.com",
       };
